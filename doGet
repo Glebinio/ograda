@@ -1,0 +1,44 @@
+function doGet() {
+  var ss = SpreadsheetApp.getActiveSpreadsheet();
+  var sheet = ss.getSheetByName("Менеджерам"); // Получаем лист по имени "Менеджерам"
+  var data = sheet.getDataRange().getValues();
+  var result = [];
+  for (var i = 1; i < data.length; i++) {
+    var row = data[i];
+    if (row[0].startsWith("Панель")) {
+      result.push({
+        type: "панель",
+        size: row[0].split(" ")[1],
+        price1: row[1],
+        price15: row[3],
+        purchasePrice1: row[2],
+        purchasePrice15: row[4]
+      });
+    } else if (row[0] === "Калитка") {
+      result.push({
+        type: "калитка",
+        price1: row[1],
+        price15: row[3],
+        purchasePrice1: row[2],
+        purchasePrice15: row[4]
+      });
+    } else if (row[0].startsWith("Столб 25*25")) {
+      var size = row[0].split(", ")[1].split(" ")[0]; // Извлекаем размер столба
+      result.push({
+        type: "столб25",
+        size: size,
+        price: row[5],
+        purchasePrice: row[6]
+      });
+    } else if (row[0].startsWith("Столб 30*30")) {
+      var size = row[0].split(", ")[1].split(" ")[0]; // Извлекаем размер столба
+      result.push({
+        type: "столб30",
+        size: size,
+        price: row[5],
+        purchasePrice: row[6]
+      });
+    }
+  }
+  return ContentService.createTextOutput(JSON.stringify(result)).setMimeType(ContentService.MimeType.JSON);
+}
