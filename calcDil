@@ -1,0 +1,367 @@
+<!doctype html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>Документ без названия</title>
+</head>
+
+<body>
+<div id="manager-fence-calculator" style="max-width: 800px; margin: 20px auto; font-family: Arial, sans-serif;">
+  <h2>Калькулятор оградок для дилеров</h2>
+  <p>Размеры оградки (в мм):</p>
+  <div style="margin-bottom: 10px;">
+    <label>Сторона 1 (мм):
+      <input type="number" id="side1_mgr" value="2500" style="margin: 5px;">
+    </label>
+  </div>
+  <div style="margin-bottom: 10px;">
+    <label>Сторона 2 (мм):
+      <input type="number" id="side2_mgr" value="3000" style="margin: 5px;">
+    </label>
+  </div>
+  <div style="margin-bottom: 10px;">
+    <label>Выберите длину столба (мм):
+      <select id="postLength_mgr" style="margin: 5px;">
+        <option value="1000">1000</option>
+        <option value="1500">1500</option>
+        <option value="1700">1700</option>
+      </select>
+    </label>
+  </div>
+  <button id="calculateBtn_mgr" style="padding: 5px 10px; margin-bottom: 10px;">Рассчитать</button>
+
+  <h3>Результат:</h3>
+  <div id="result_mgr" style="background: #f4f4f4; padding: 10px; white-space: pre-wrap;"></div>
+
+  <button id="saveBtn_mgr" style="padding: 5px 10px; margin: 10px 0;">Сохранить расчет в файл (TXT)</button>
+
+  <h3>Схемы сторон оградки:</h3>
+  <div id="diagrams_mgr">
+    <div>
+      <h4>Сторона 1</h4>
+      <div id="diagram1_mgr"></div>
+    </div>
+    <div>
+      <h4>Сторона 2</h4>
+      <div id="diagram2_mgr"></div>
+    </div>
+    <div>
+      <h4>Сторона 3</h4>
+      <div id="diagram3_mgr"></div>
+    </div>
+    <div>
+      <h4>Сторона 4</h4>
+      <div id="diagram4_mgr"></div>
+    </div>
+  </div>
+</div>
+
+<script>
+
+  // Глобальные переменные для цен (будут обновлены из CSV)
+let panelSalePrices = {};
+let panelPurchasePrices = {};
+let gateSalePrice = {};
+let gatePurchasePrice = {};
+let postSalePrices = { "25": {}, "30": {} };
+let postPurchasePrices = { "25": {}, "30": {} };
+
+function updateDealerPrices() {
+    const url = 'https://script.google.com/macros/s/AKfycbwxQ67b9-b9QcBH2d8Q6aaSawweLVJLPOUFm4hDoCugVIOgMbTh5avqkSjZXVLOjPKi5A/exec'; // Замените на URL вашего первого приложения
+
+    fetch(url)
+        .then(response => response.json())
+        .then(data => {
+            console.log('Данные получены:', data);
+
+            data.forEach(item => {
+                if (item.source === "Цены дилерам") {
+                    if (item.type === "панель") {
+                        if (!panelSalePrices[item.size]) {
+                            panelSalePrices[item.size] = {};
+                        }
+                        if (item.size === "1210") {
+                            panelSalePrices[item.size] = { "1.5": Math.floor(item.price) };
+                        } else if (item.size === "790") {
+                            panelSalePrices[item.size] = { "1.5": Math.floor(item.price) };
+                        } else if (item.size === "575") {
+                            panelSalePrices[item.size] = { "1.5": Math.floor(item.price) };
+                        }
+                    } else if (item.type === "калитка") {
+                        gateSalePrice["1.5"] = Math.floor(item.price);
+                    } else if (item.type === "столб25") {
+                        postSalePrices["25"][item.size] = Math.floor(item.price);
+                    } else if (item.type === "столб30") {
+                        postSalePrices["30"][item.size] = Math.floor(item.price);
+                    }
+                }
+                if (item.source === "Менеджерам") {
+            if (item.type === "панель") {
+                panelPurchasePrices[item.size] = { "1": Math.floor(item.purchasePrice1), "1.5": Math.floor(item.purchasePrice15) };
+            } else if (item.type === "калитка") {
+                gatePurchasePrice["1"] = Math.floor(item.purchasePrice1);
+                gatePurchasePrice["1.5"] = Math.floor(item.purchasePrice15);
+            } else if (item.type === "столб25") {
+                postPurchasePrices["25"][item.size] = Math.floor(item.purchasePrice);
+            } else if (item.type === "столб30") {
+                postPurchasePrices["30"][item.size] = Math.floor(item.purchasePrice);
+            }
+        }
+            });
+
+            console.log('Цены дилерам обновлены:', {
+                panelSalePrices: panelSalePrices,
+                gateSalePrice: gateSalePrice,
+                postSalePrices: postSalePrices
+            });
+        })
+        .catch(err => console.error("Ошибка обновления цен дилерам:", err));
+}
+
+document.addEventListener("DOMContentLoaded", function() {
+    updateDealerPrices();
+    });
+document.addEventListener("DOMContentLoaded", function() {
+  // Функция для рисования схемы одной стороны с надписями на панелях
+  function drawDiagram(seq, containerId, postCross) {
+    let container = document.getElementById(containerId);
+    container.innerHTML = "";
+    let scale = 0.1;
+    let totalPanels = seq.reduce((a, b) => a + b, 0);
+    let totalLength = totalPanels + (seq.length + 1) * postCross;
+    let svgWidth = totalLength * scale;
+    let svgHeight = 50;
+    let svgNS = "http://www.w3.org/2000/svg";
+    let svg = document.createElementNS(svgNS, "svg");
+    svg.setAttribute("width", svgWidth);
+    svg.setAttribute("height", svgHeight);
+
+    let x = 0;
+    let postWidth = postCross * scale;
+     
+    // Инициализация переменных (если они еще не объявлены)
+    // let panelSalePrices = {};
+    // let panelPurchasePrices = {};
+    // let gateSalePrice = {};
+    // let gatePurchasePrice = {};
+    // let postSalePrices = { "25": {}, "30": {} };
+    // let postPurchasePrices = { "25": {}, "30": {} };
+
+    // Вызываем функцию updatePrices() при загрузке страницы
+    
+    function createRect(x, y, width, height, fill) {
+      let rect = document.createElementNS(svgNS, "rect");
+      rect.setAttribute("x", x);
+      rect.setAttribute("y", y);
+      rect.setAttribute("width", width);
+      rect.setAttribute("height", height);
+      rect.setAttribute("fill", fill);
+      return rect;
+    }
+
+    function createText(cx, cy, content) {
+      let text = document.createElementNS(svgNS, "text");
+      text.setAttribute("x", cx);
+      text.setAttribute("y", cy);
+      text.setAttribute("fill", "#000");
+      text.setAttribute("font-size", "10");
+      text.setAttribute("text-anchor", "middle");
+      text.textContent = content;
+      return text;
+    }
+
+    svg.appendChild(createRect(x, 0, postWidth, svgHeight, "#666"));
+    x += postWidth;
+
+    seq.forEach(function(panel) {
+      let panelWidth = panel * scale;
+      let panelRect = createRect(x, 10, panelWidth, svgHeight - 20, "#ccc");
+      svg.appendChild(panelRect);
+      let textX = x + panelWidth / 2;
+      let textY = svgHeight / 2 + 4;
+      let panelLabel = createText(textX, textY, panel.toString());
+      svg.appendChild(panelLabel);
+      x += panelWidth;
+      svg.appendChild(createRect(x, 0, postWidth, svgHeight, "#666"));
+      x += postWidth;
+    });
+
+    container.appendChild(svg);
+  }
+
+
+
+
+
+  function calculateFenceManager() {
+    let s1 = parseInt(document.getElementById("side1_mgr").value, 10);
+    let s2 = parseInt(document.getElementById("side2_mgr").value, 10);
+    let sideA = Math.min(s1, s2);
+    let sideB = Math.max(s1, s2);
+
+    let postType = "25";
+    let postCross = 25;
+    let selectedPostLength = document.getElementById("postLength_mgr").value;
+
+    // const panelSalePrices = {
+    //   1210: { "1": 3070, "1.5": 3720 },
+    //   790: { "1": 2537, "1.5": 2970 },
+    //   575: { "1": 2135, "1.5": 2331 }
+    // };
+    // const panelPurchasePrices = {
+    //   1210: { "1": 1023, "1.5": 1240 },
+    //   790: { "1": 846, "1.5": 990 },
+    //   575: { "1": 712, "1.5": 777 }
+    // };
+    // const gateSalePrice = { "1": 2450, "1.5": 2775 };
+    // const gatePurchasePrice = { "1": 817, "1.5": 925 };
+
+    // const postSalePrices = {
+    //   "25": { "1000": 840, "1500": 1260, "1700": 1428 }
+    // };
+    // const postPurchasePrices = {
+    //   "25": { "1000": 280, "1500": 420, "1700": 476 }
+    // };
+
+    const panelsAvailable = [1210, 790, 575];
+    const maxPanels = 7;
+    const tol = 100;
+
+    function getCandidateSequence(L, force575) {
+      let bestSequence = null;
+      let bestError = Infinity;
+      for (let n = 1; n <= maxPanels; n++) {
+        function generateSequence(current, depth, count575) {
+          if (depth === n) {
+            let panelsSum = current.reduce((a, b) => a + b, 0);
+            let postsTotal = (n + 1) * postCross;
+            let total = panelsSum + postsTotal;
+            let error = Math.abs(L - total);
+            if (error <= tol && (!force575 || count575 >= 1)) {
+              let count1210 = current.filter(p => p === 1210).length;
+              let bestCount1210 = bestSequence ? bestSequence.filter(p => p === 1210).length : -1;
+              if (error < bestError || (error === bestError && count1210 > bestCount1210)) {
+                bestError = error;
+                bestSequence = current.slice();
+              }
+            }
+            return;
+          }
+          for (let i = 0; i < panelsAvailable.length; i++) {
+            if (panelsAvailable[i] === 575 && count575 >= 2) continue;
+            current.push(panelsAvailable[i]);
+            generateSequence(current, depth + 1, count575 + (panelsAvailable[i] === 575 ? 1 : 0));
+            current.pop();
+          }
+        }
+        generateSequence([], 0, 0);
+      }
+      return bestSequence;
+    }
+
+    let seqA = getCandidateSequence(sideA, false);
+    let seqB = getCandidateSequence(sideB, false);
+    function contains575(seq) { return seq && seq.indexOf(575) !== -1; }
+    if (!contains575(seqA) && !contains575(seqB)) {
+      seqA = getCandidateSequence(sideA, true) || seqA;
+    }
+    if (!seqA || !seqB) {
+      document.getElementById("result_mgr").textContent = "Решения для заданных размеров не найдено.";
+      return;
+    }
+
+    function buildSequenceString(seq) {
+      let parts = [];
+      parts.push(postCross);
+      seq.forEach(function(p) {
+        parts.push(p);
+        parts.push(postCross);
+      });
+      return parts.join("/");
+    }
+
+    let seqStrA = buildSequenceString(seqA);
+    let seqStrB = buildSequenceString(seqB);
+
+    let postsA = seqA.length + 1;
+    let postsB = seqB.length + 1;
+    let totalPosts = 2 * (postsA + postsB) - 4;
+
+    let panelsCountA = {1210: 0, 790: 0, 575: 0};
+    seqA.forEach(p => { panelsCountA[p]++; });
+    let panelsCountB = {1210: 0, 790: 0, 575: 0};
+    seqB.forEach(p => { panelsCountB[p]++; });
+    let totalPanels = {
+      1210: panelsCountA[1210] * 2 + panelsCountB[1210] * 2,
+      790: panelsCountA[790] * 2 + panelsCountB[790] * 2,
+      575: panelsCountA[575] * 2 + panelsCountB[575] * 2
+    };
+
+    let gateCount = totalPanels[575] > 0 ? 1 : 0;
+    let effective575Count = totalPanels[575] - gateCount;
+
+    let cost_post_sale = totalPosts * postSalePrices[postType][selectedPostLength];
+    let cost_panel_sale_1 = totalPanels[1210] * panelSalePrices[1210]["1"] +
+      totalPanels[790] * panelSalePrices[790]["1"] +
+      effective575Count * panelSalePrices[575]["1"];
+    let cost_gate_sale_1 = gateCount * gateSalePrice["1"];
+    let totalSale_1 = cost_post_sale + cost_panel_sale_1 + cost_gate_sale_1;
+
+    let cost_post_purchase = totalPosts * postPurchasePrices[postType][selectedPostLength];
+    let cost_panel_purchase_1 = totalPanels[1210] * panelPurchasePrices[1210]["1"] +
+      totalPanels[790] * panelPurchasePrices[790]["1"] +
+      effective575Count * panelPurchasePrices[575]["1"];
+    let cost_gate_purchase_1 = gateCount * gatePurchasePrice["1"];
+    let totalPurchase_1 = cost_post_purchase + cost_panel_purchase_1 + cost_gate_purchase_1;
+
+    let cost_panel_sale_15 = totalPanels[1210] * panelSalePrices[1210]["1.5"] +
+      totalPanels[790] * panelSalePrices[790]["1.5"] +
+      effective575Count * panelSalePrices[575]["1.5"];
+    let cost_gate_sale_15 = gateCount * gateSalePrice["1.5"];
+    let totalSale_15 = cost_post_sale + cost_panel_sale_15 + cost_gate_sale_15;
+
+    let cost_panel_purchase_15 = totalPanels[1210] * panelPurchasePrices[1210]["1.5"] +
+      totalPanels[790] * panelPurchasePrices[790]["1.5"] +
+      effective575Count * panelPurchasePrices[575]["1.5"];
+    let cost_gate_purchase_15 = gateCount * gatePurchasePrice["1.5"];
+    let totalPurchase_15 = cost_post_purchase + cost_panel_purchase_15 + cost_gate_purchase_15;
+
+    let resultHTML = "";
+    resultHTML += "Оградка " + sideA + "×" + sideB + " мм.<br>";
+    resultHTML += "Сторона 1: " + seqStrA + "<br>";
+    resultHTML += "Сторона 2: " + seqStrB + "<br>";
+    resultHTML += "Сторона 3: " + seqStrA + "<br>";
+    resultHTML += "Сторона 4: " + seqStrB + "<br><br>";
+    resultHTML += "Всего столбов " + postCross + "×" + postCross + " – " + totalPosts + " шт, ";
+    resultHTML += "панелей 1210 – " + totalPanels[1210] + " шт, ";
+    resultHTML += "панелей 790 – " + totalPanels[790] + " шт, ";
+    resultHTML += "панелей 575 – " + effective575Count + " шт, ";
+    resultHTML += "калитка – " + gateCount + " шт.<br><br>";
+    resultHTML += "Стоимость оградки из металла 1,5 мм: <strong style='font-size:14pt;'>" + Math.round(totalSale_15).toLocaleString("ru-RU") + " руб</strong><br>";
+    resultHTML += "Закуп из метала 1,5 мм: " + Math.round(totalPurchase_15).toLocaleString("ru-RU") + " руб";
+
+    document.getElementById("result_mgr").innerHTML = resultHTML;
+
+    drawDiagram(seqA, "diagram1_mgr", postCross);
+    drawDiagram(seqB, "diagram2_mgr", postCross);
+    drawDiagram(seqA, "diagram3_mgr", postCross);
+    drawDiagram(seqB, "diagram4_mgr", postCross);
+  }
+
+  function saveCalculationTXT() {
+    let resultText = document.getElementById("result_mgr").innerText;
+    let blob = new Blob([resultText], { type: "text/plain;charset=utf-8" });
+    let link = document.createElement("a");
+    link.href = URL.createObjectURL(blob);
+    link.download = "calculation.txt";
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  }
+
+  document.getElementById("calculateBtn_mgr").addEventListener("click", calculateFenceManager);
+  document.getElementById("saveBtn_mgr").addEventListener("click", saveCalculationTXT);
+});
+</script>
+</body>
+</html>
