@@ -338,8 +338,6 @@ document.addEventListener("DOMContentLoaded", function() {
     resultHTML += "панелей 575 – " + effective575Count + " шт, ";
     resultHTML += "калитка – " + gateCount + " шт.<br><br>";
     resultHTML += "Стоимость оградки из металла 1,5 мм: <strong style='font-size:14pt;'>" + Math.round(totalSale_15).toLocaleString("ru-RU") + " руб</strong><br>";
-    resultHTML += "Закуп из метала 1,5 мм: " + Math.round(totalPurchase_15).toLocaleString("ru-RU") + " руб";
-
     document.getElementById("result_mgr").innerHTML = resultHTML;
 
     drawDiagram(seqA, "diagram1_mgr", postCross);
