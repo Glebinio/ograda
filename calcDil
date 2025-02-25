@@ -81,30 +81,30 @@ function updateDealerPrices() {
                             panelSalePrices[item.size] = {};
                         }
                         if (item.size === "1210") {
-                            panelSalePrices[item.size] = { "1.5": Math.floor(item.price) };
+                            panelSalePrices[item.size] = { "1.5": Math.round(item.price) };
                         } else if (item.size === "790") {
-                            panelSalePrices[item.size] = { "1.5": Math.floor(item.price) };
+                            panelSalePrices[item.size] = { "1.5": Math.round(item.price) };
                         } else if (item.size === "575") {
-                            panelSalePrices[item.size] = { "1.5": Math.floor(item.price) };
+                            panelSalePrices[item.size] = { "1.5": Math.round(item.price) };
                         }
                     } else if (item.type === "калитка") {
-                        gateSalePrice["1.5"] = Math.floor(item.price);
+                        gateSalePrice["1.5"] = Math.round(item.price);
                     } else if (item.type === "столб25") {
-                        postSalePrices["25"][item.size] = Math.floor(item.price);
+                        postSalePrices["25"][item.size] = Math.round(item.price);
                     } else if (item.type === "столб30") {
-                        postSalePrices["30"][item.size] = Math.floor(item.price);
+                        postSalePrices["30"][item.size] = Math.round(item.price);
                     }
                 }
                 if (item.source === "Менеджерам") {
             if (item.type === "панель") {
-                panelPurchasePrices[item.size] = { "1": Math.floor(item.purchasePrice1), "1.5": Math.floor(item.purchasePrice15) };
+                panelPurchasePrices[item.size] = { "1": Math.round(item.purchasePrice1), "1.5": Math.round(item.purchasePrice15) };
             } else if (item.type === "калитка") {
-                gatePurchasePrice["1"] = Math.floor(item.purchasePrice1);
-                gatePurchasePrice["1.5"] = Math.floor(item.purchasePrice15);
+                gatePurchasePrice["1"] = Math.round(item.purchasePrice1);
+                gatePurchasePrice["1.5"] = Math.round(item.purchasePrice15);
             } else if (item.type === "столб25") {
-                postPurchasePrices["25"][item.size] = Math.floor(item.purchasePrice);
+                postPurchasePrices["25"][item.size] = Math.round(item.purchasePrice);
             } else if (item.type === "столб30") {
-                postPurchasePrices["30"][item.size] = Math.floor(item.purchasePrice);
+                postPurchasePrices["30"][item.size] = Math.round(item.purchasePrice);
             }
         }
             });
