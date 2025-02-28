@@ -202,6 +202,10 @@ document.addEventListener("DOMContentLoaded", function() {
     let postType = "25";
     let postCross = 25;
     let selectedPostLength = document.getElementById("postLength_mgr").value;
+    if (sideA > 3000 || sideB > 3000) {
+            postType = "30";
+            postCross = 30;
+        }
 
     // const panelSalePrices = {
     //   1210: { "1": 3070, "1.5": 3720 },
