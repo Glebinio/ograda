@@ -208,36 +208,40 @@ document.addEventListener("DOMContentLoaded", function() {
     const tol = 100;
 
     function getCandidateSequence(L, force575) {
-      let bestSequence = null;
-      let bestError = Infinity;
-      for (let n = 1; n <= maxPanels; n++) {
+    let bestSequence = null;
+    let bestError = Infinity;
+    const sortedPanels = panelsAvailable.slice().sort((a, b) => b - a);
+
+    for (let n = 1; n <= maxPanels; n++) {
         function generateSequence(current, depth, count575) {
-          if (depth === n) {
-            let panelsSum = current.reduce((a, b) => a + b, 0);
-            let postsTotal = (n + 1) * postCross;
-            let total = panelsSum + postsTotal;
-            let error = Math.abs(L - total);
-            if (error <= tol && (!force575 || count575 >= 1)) {
-              let count1210 = current.filter(p => p === 1210).length;
-              let bestCount1210 = bestSequence ? bestSequence.filter(p => p === 1210).length : -1;
-              if (error < bestError || (error === bestError && count1210 > bestCount1210)) {
-                bestError = error;
-                bestSequence = current.slice();
-              }
+            if (depth === n) {
+                let panelsSum = current.reduce((a, b) => a + b, 0);
+                let postsTotal = (n + 1) * postCross;
+                let total = panelsSum + postsTotal;
+                let error = Math.abs(L - total);
+
+                if (error <= tol && (!force575 || count575 >= 1)) {
+                    if (bestSequence === null || current.filter(p => p === 1210).length > (bestSequence ? bestSequence.filter(p => p === 1210).length : 0) ||
+                        (bestSequence && current.filter(p => p === 1210).length === bestSequence.filter(p => p === 1210).length && error < bestError)) {
+                        bestError = error;
+                        bestSequence = current.slice();
+                    }
+                }
+                return;
             }
-            return;
-          }
-          for (let i = 0; i < panelsAvailable.length; i++) {
-            if (panelsAvailable[i] === 575 && count575 >= 2) continue;
-            current.push(panelsAvailable[i]);
-            generateSequence(current, depth + 1, count575 + (panelsAvailable[i] === 575 ? 1 : 0));
-            current.pop();
-          }
+
+            for (let i = 0; i < sortedPanels.length; i++) {
+                const panel = sortedPanels[i];
+                if (panel === 575 && count575 >= 2) continue;
+                current.push(panel);
+                generateSequence(current, depth + 1, count575 + (panel === 575 ? 1 : 0));
+                current.pop();
+            }
         }
         generateSequence([], 0, 0);
-      }
-      return bestSequence;
     }
+    return bestSequence;
+}
 
     let seqA = getCandidateSequence(sideA, false);
     let seqB = getCandidateSequence(sideB, false);
